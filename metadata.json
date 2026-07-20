@@ -1,0 +1,6 @@
+{
+  "name": "AI Video Workspace",
+  "description": "An interactive, AI-powered video analysis workspace with synchronized transcripts, chapters, highlights, custom note-taking with timestamps, and Q&A.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
