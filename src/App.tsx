@@ -191,12 +191,24 @@ export default function App() {
           setLogs((prev) => [...data.logs.reverse(), ...prev]);
         }
 
+        const hasToken = !!youtubeToken;
+        const uploadSuccess = !!data.youtubeId;
+        const jobStatus: "completed" | "failed" = (hasToken && !uploadSuccess) ? "failed" : "completed";
+
+        if (jobStatus === "failed") {
+          setLogs((prev) => [
+            `[${new Date().toLocaleTimeString()}] ❌ การอัปโหลดไปยัง YouTube Shorts ล้มเหลว: ${data.uploadError || "กรุณาเชื่อมโยง OAuth กับ YouTube ใหม่อีกครั้ง"}`,
+            `[${new Date().toLocaleTimeString()}] 💡 คำแนะนำ: ตรวจสอบว่าได้ติ๊กเลือก 'จัดการบัญชี YouTube' ตอนเข้าสู่ระบบ หรือลองกด 'ยกเลิก' แล้วกด 'เชื่อมต่อช่อง YouTube' ใหม่อีกครั้งเพื่ออัปเดตสิทธิ์`,
+            ...prev
+          ]);
+        }
+
         // Push to active jobs history queue
         const newJob: AutomationJob = {
           id: `job-${Date.now()}`,
           productId: prod.id,
           productTitle: prod.title,
-          status: "completed",
+          status: jobStatus,
           progress: 100,
           createdAt: `วันนี้, ${new Date().toLocaleTimeString().slice(0, 5)} น.`,
           scheduledTime: new Date().toLocaleTimeString(),
@@ -323,20 +335,47 @@ export default function App() {
       if (data.success && data.script) {
         setActiveScript(data.script);
         
+        // Append backend logs to the console log state
+        if (data.logs && Array.isArray(data.logs)) {
+          setLogs((prev) => [...data.logs.reverse(), ...prev]);
+        }
+
+        const hasToken = !!youtubeToken;
+        const uploadSuccess = !!data.youtubeId;
+        const jobStatus: "completed" | "failed" = (hasToken && !uploadSuccess) ? "failed" : "completed";
+
         // Push full success logs
-        setLogs((prev) => [
-          `[${new Date().toLocaleTimeString()}] 🎉 อัปโหลดวิดีโอ Shorts ไปยัง YouTube และปักหมุดลิงก์เรียบร้อย!`,
-          `[${new Date().toLocaleTimeString()}] โพสต์บทสคริปต์ฮา: "${data.script.title}"`,
-          `[${new Date().toLocaleTimeString()}] แปลงลิงก์พันธมิตรเรียบร้อย: ${targetProduct.url}?aff_sub=${settings.shopeeSubId}`,
-          `[${new Date().toLocaleTimeString()}] ตรวจพบเนื้อเรื่อง: ${data.script.concept}`,
-          ...prev
-        ]);
+        if (jobStatus === "completed") {
+          if (uploadSuccess) {
+            setLogs((prev) => [
+              `[${new Date().toLocaleTimeString()}] 🎉 อัปโหลดวิดีโอ Shorts ไปยัง YouTube และปักหมุดลิงก์เรียบร้อย!`,
+              `[${new Date().toLocaleTimeString()}] โพสต์บทสคริปต์ฮา: "${data.script.title}"`,
+              `[${new Date().toLocaleTimeString()}] แปลงลิงก์พันธมิตรเรียบร้อย: ${targetProduct.url}?aff_sub=${settings.shopeeSubId}`,
+              `[${new Date().toLocaleTimeString()}] ตรวจพบเนื้อเรื่อง: ${data.script.concept}`,
+              ...prev
+            ]);
+          } else {
+            setLogs((prev) => [
+              `[${new Date().toLocaleTimeString()}] ⚠️ วิดีโอถูกสร้างเรียบร้อยในคลัง แต่ไม่ได้อัปโหลดเนื่องจากยังไม่ได้เชื่อมต่อบัญชี YouTube`,
+              `[${new Date().toLocaleTimeString()}] โพสต์บทสคริปต์ฮา: "${data.script.title}"`,
+              `[${new Date().toLocaleTimeString()}] แปลงลิงก์พันธมิตรเรียบร้อย: ${targetProduct.url}?aff_sub=${settings.shopeeSubId}`,
+              `[${new Date().toLocaleTimeString()}] ตรวจพบเนื้อเรื่อง: ${data.script.concept}`,
+              ...prev
+            ]);
+          }
+        } else {
+          setLogs((prev) => [
+            `[${new Date().toLocaleTimeString()}] ❌ เกิดข้อผิดพลาดในการอัปโหลดไปยัง YouTube Shorts: ${data.uploadError || "ไม่ได้รับสิทธิ์เข้าถึงช่อง หรือสิทธิ์ OAuth หมดอายุ"}`,
+            `[${new Date().toLocaleTimeString()}] 💡 คำแนะนำ: ตรวจสอบว่าได้ติ๊กเลือก 'จัดการบัญชี YouTube' ตอนเข้าสู่ระบบ หรือลองกด 'ยกเลิก' แล้วกด 'เชื่อมต่อช่อง YouTube' ใหม่อีกครั้งเพื่ออัปเดตสิทธิ์`,
+            ...prev
+          ]);
+        }
 
         const newJob: AutomationJob = {
           id: `job-${Date.now()}`,
           productId: targetProduct.id,
           productTitle: targetProduct.title,
-          status: "completed",
+          status: jobStatus,
           progress: 100,
           createdAt: `วันนี้, ${new Date().toLocaleTimeString().slice(0, 5)} น.`,
           scheduledTime: new Date().toLocaleTimeString(),
@@ -347,69 +386,21 @@ export default function App() {
         };
         setJobs((prev) => [newJob, ...prev]);
       }
-    } catch (err) {
-      // Emergency success flow simulation
+    } catch (err: any) {
+      console.error(err);
       setLogs((prev) => [
-        `[${new Date().toLocaleTimeString()}] 🎉 อัปโหลดวิดีโอ Shorts ไปยัง YouTube เรียบร้อย! (ความเสถียร 100%)`,
-        `[${new Date().toLocaleTimeString()}] สำเร็จการสร้างพล็อตและปักหมุด Shopee Affiliate`,
+        `[${new Date().toLocaleTimeString()}] ❌ เกิดข้อผิดพลาดในการรันระบบออโตเมชัน: ${err.message || err}`,
         ...prev
       ]);
-
-      const mockFallback: FunnyScript = {
-        productId: targetProduct.id,
-        concept: `หักมุมรีวิวสินค้าขายตรงไอเดียขบขันของ "${targetProduct.title}"`,
-        hook: `ดูด่วน! อย่าเพิ่งเลื่อนผ่าน ของดีจาก Shopee ที่ฮากระจาย!`,
-        plotTwist: `เกิดเหตุความฮาหักมุมสุดโต่งจากคุณสมบัติการทำงาน`,
-        title: `ใครซื้อ ${targetProduct.title} มาบ้าง? ระวังตัวด้วยนะครับ ฮาเกินคาดจริงๆ! 🤣🔥 #Shopeeป้ายยา #ฮาๆ # Shorts`,
-        description: `พิกัดร้านค้าทางการ: ${targetProduct.url}?aff_sub=${settings.shopeeSubId}\n\nฝากกดไลก์กดติดตามไว้รับชมไอเดียป้ายยาตลกหักมุมอัตโนมัติ 100% ประจำทุกวันครับ!`,
-        storyboard: [
-          {
-            sceneNo: 1,
-            visualPrompt: "Dynamic photo of the product, colorful layout",
-            imageUrl: targetProduct.imageUrl || "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=500&q=80",
-            voiceover: `นี่คือ ${targetProduct.title} สุดยอดไอเทมแห่งปีที่ทุกคนต้องมีติดบ้าน`,
-            subtitle: `นี่คือ ${targetProduct.title} ไอเทมที่ต้องมี!`,
-            duration: 3
-          },
-          {
-            sceneNo: 2,
-            visualPrompt: "Funny happy presenter posing with product",
-            imageUrl: "https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=500&q=80",
-            voiceover: `สรรพคุณบอกชัดเจนว่า "${targetProduct.sellingPoint}" ราคาโดนใจแค่ ${targetProduct.price} บาท`,
-            subtitle: `ราคาโดนใจแค่ ${targetProduct.price} เท่านั้น!`,
-            duration: 4
-          },
-          {
-            sceneNo: 3,
-            visualPrompt: "Extreme macro shot of wide open eyes of presenter",
-            imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80",
-            voiceover: `แต่ความลับที่ไม่มีใครบอกคุณคือ... พลังมันล้นมากจนทำเอาป้าข้างบ้านสะดุ้งทั้งวัน!`,
-            subtitle: `แต่ประเด็นคือป้าข้างบ้านสะดุ้งทั้งวัน!`,
-            duration: 3
-          },
-          {
-            sceneNo: 4,
-            visualPrompt: "Funny shocked head shot of presenter, bald hair, crazy zoom in",
-            imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80",
-            voiceover: `ตัวตึงตลกขนาดนี้ ลิงก์ใต้คอมเมนต์นะครับ ไปซื้อมาแกล้งเอ้ยไปใช้งานกันได้เลยจ้า!`,
-            subtitle: `ตลกปั่นป่วนสุดๆ ลิงก์ใต้คอมเมนต์น้า!`,
-            duration: 5
-          }
-        ]
-      };
-
-      setActiveScript(mockFallback);
 
       const newJob: AutomationJob = {
         id: `job-${Date.now()}`,
         productId: targetProduct.id,
         productTitle: targetProduct.title,
-        status: "completed",
+        status: "failed",
         progress: 100,
         createdAt: `วันนี้, ${new Date().toLocaleTimeString().slice(0, 5)} น.`,
         scheduledTime: new Date().toLocaleTimeString(),
-        script: mockFallback,
-        youtubeUrl: "https://youtube.com/shorts",
         logs: []
       };
       setJobs((prev) => [newJob, ...prev]);

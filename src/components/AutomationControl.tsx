@@ -11,7 +11,9 @@ import {
   Youtube, 
   Sliders, 
   ToggleLeft, 
-  ToggleRight 
+  ToggleRight,
+  XCircle,
+  Video
 } from "lucide-react";
 
 interface AutomationControlProps {
@@ -282,10 +284,22 @@ export default function AutomationControl({
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle className="w-2.5 h-2.5" />
-                          <span>โพสต์สำเร็จ</span>
-                        </span>
+                        {job.status === "failed" ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <XCircle className="w-2.5 h-2.5" />
+                            <span>อัปโหลดล้มเหลว</span>
+                          </span>
+                        ) : !job.youtubeId ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20" title="วิดีโอถูกสร้างเรียบร้อยแล้วในเซิร์ฟเวอร์ แต่ไม่ได้อัปโหลดขึ้น YouTube เนื่องจากยังไม่ได้เชื่อมบัญชี">
+                            <Video className="w-2.5 h-2.5" />
+                            <span>บันทึกในคลัง</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle className="w-2.5 h-2.5" />
+                            <span>โพสต์สำเร็จ</span>
+                          </span>
+                        )}
                         
                         <div className="flex items-center gap-1.5">
                           {job.youtubeId && (

@@ -668,6 +668,8 @@ You must return strictly valid JSON matching this schema:
     const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
     let youtubeId = "";
     let youtubeUrl = "https://youtube.com/shorts";
+    let uploadSuccess = false;
+    let uploadError = "";
 
     if (token) {
       logs.push(`[${new Date().toLocaleTimeString()}] ค้นพบ Token เชื่อมต่อแท้ (OAuth 2.0) กำลังโพสต์และอัปโหลดไปยัง YouTube Shorts...`);
@@ -675,10 +677,12 @@ You must return strictly valid JSON matching this schema:
         const uploadResult = await uploadToYoutube(finalMp4, token, script.title, script.description);
         youtubeId = uploadResult.id || "";
         youtubeUrl = `https://youtube.com/shorts/${youtubeId}`;
+        uploadSuccess = true;
         logs.push(`[${new Date().toLocaleTimeString()}] 🎉 โพสต์สำเร็จ 100%! คลิป Shorts พร้อมให้บริการสดที่: ${youtubeUrl}`);
       } catch (uploadErr: any) {
         console.error("YouTube upload error details:", uploadErr);
-        logs.push(`[${new Date().toLocaleTimeString()}] ❌ เกิดข้อผิดพลาดในขั้นโคลนเชื่อมต่อ API อัปโหลดจริง: ${uploadErr.message || uploadErr}`);
+        uploadError = uploadErr.message || String(uploadErr);
+        logs.push(`[${new Date().toLocaleTimeString()}] ❌ เกิดข้อผิดพลาดในขั้นโคลนเชื่อมต่อ API อัปโหลดจริง: ${uploadError}`);
       }
     } else {
       logs.push(`[${new Date().toLocaleTimeString()}] บันทึกวิดีโอ MP4 ลงคลังเสร็จสิ้น (เข้าสู่โหมดรอการยืนยัน OAuth ของผู้ใช้)`);
@@ -698,6 +702,8 @@ You must return strictly valid JSON matching this schema:
       script,
       youtubeId,
       youtubeUrl,
+      uploadSuccess,
+      uploadError,
       logs
     });
   } catch (error: any) {
